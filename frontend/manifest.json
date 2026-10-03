@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Waypoint",
+  "version": "1.0",
+  "description": "A GPS for navigating information on the internet.",
+  "permissions": ["tabs", "storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
