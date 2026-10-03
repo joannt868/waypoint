@@ -1,11 +1,22 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+import json
+
+from .llm import generate_learning_map, generate_next_waypoint
 
 app = FastAPI()
 
 
 class Goal(BaseModel):
     topic: str
+
+
+class WaypointRequest(BaseModel):
+    goal: str
+    current_node: str
+    visited_nodes: list[str]
+    nodes: list[dict]
+    edges: list[dict]
 
 
 @app.get("/")
@@ -15,36 +26,18 @@ def home():
 
 @app.post("/generate-map")
 def generate_map(goal: Goal):
-    return {
-        "topic": goal.topic,
-        "nodes": [
-            {
-                "id": "basics",
-                "title": "The Basics",
-                "description": f"Introduction to {goal.topic}",
-                "difficulty": 1
-            },
-            {
-                "id": "fundamentals",
-                "title": "Fundamentals",
-                "description": f"Core concepts behind {goal.topic}",
-                "difficulty": 2
-            },
-            {
-                "id": "applications",
-                "title": "Applications",
-                "description": f"Real-world applications of {goal.topic}",
-                "difficulty": 3
-            }
-        ],
-        "edges": [
-            {
-                "source": "basics",
-                "target": "fundamentals"
-            },
-            {
-                "source": "fundamentals",
-                "target": "applications"
-            }
-        ]
-    }
+    response = generate_learning_map(goal.topic)
+    return json.loads(response)
+
+
+@app.post("/next-waypoint")
+def next_waypoint(request: WaypointRequest):
+    response = generate_next_waypoint(
+        request.goal,
+        request.current_node,
+        request.visited_nodes,
+        request.nodes,
+        request.edges
+    )
+
+    return json.loads(response)
