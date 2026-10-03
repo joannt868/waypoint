@@ -10,7 +10,6 @@
     <header>
         <div class="brand">
             <div class="brand-mark">W</div>
-
             <div>
                 <div class="brand-name">Waypoint</div>
                 <div class="brand-subtitle">Your path through the web</div>
@@ -23,16 +22,56 @@
         </div>
     </header>
 
+
+    <!-- Learning Goal -->
+
+    <section class="goal-section">
+
+        <div class="eyebrow">WHAT DO YOU WANT TO LEARN?</div>
+
+        <input
+            id="goal-input"
+            type="text"
+            placeholder="e.g. How does the stock market work?"
+        >
+
+        <button id="generate-button">
+            Generate learning map
+        </button>
+
+        <div id="loading" class="hidden">
+            Building your learning path...
+        </div>
+
+    </section>
+
+
+    <!-- Journey -->
+
     <div class="journey-header">
         <div class="eyebrow">CURRENT JOURNEY</div>
         <div id="page-count">0 pages</div>
     </div>
 
+
     <main id="history">
         Loading...
     </main>
 
+
+    <!-- Learning Map -->
+
+    <section id="map-section" class="hidden">
+
+        <div class="eyebrow">LEARNING MAP</div>
+
+        <div id="map"></div>
+
+    </section>
+
+
     <footer>
+
         <button id="map-button">
             Explore your map
         </button>
@@ -40,7 +79,9 @@
         <button id="clear-button">
             Clear journey
         </button>
+
     </footer>
+
 
     <script src="popup.js"></script>
 

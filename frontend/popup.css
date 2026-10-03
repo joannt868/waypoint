@@ -3,23 +3,25 @@
 }
 
 body {
-    width: 360px;
+    width: 420px;
+    max-height: 600px;
+    overflow-y: auto;
     margin: 0;
-    padding: 22px;
-
+    padding: 20px;
     background: #fafafa;
     color: #18181b;
-
     font-family: Arial, sans-serif;
 }
 
-/* Header */
+/* =========================
+   Header
+   ========================= */
 
 header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 30px;
+    margin-bottom: 22px;
 }
 
 .brand {
@@ -31,16 +33,12 @@ header {
 .brand-mark {
     width: 34px;
     height: 34px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 9px;
-
     background: #18181b;
     color: white;
-
     font-size: 14px;
     font-weight: bold;
 }
@@ -60,7 +58,6 @@ header {
     display: flex;
     align-items: center;
     gap: 6px;
-
     color: #777;
     font-size: 11px;
 }
@@ -68,33 +65,153 @@ header {
 .live-dot {
     width: 6px;
     height: 6px;
-
     border-radius: 50%;
     background: #22c55e;
 }
 
-/* Journey header */
 
-.journey-header {
-    margin-bottom: 12px;
-}
+/* =========================
+   General
+   ========================= */
 
 .eyebrow {
-    margin-bottom: 5px;
-
+    margin-bottom: 7px;
     color: #999;
-
     font-size: 9px;
     font-weight: bold;
     letter-spacing: 1px;
 }
 
-#page-count {
-    font-size: 20px;
-    font-weight: bold;
+
+/* =========================
+   Learning Goal
+   ========================= */
+
+.goal-section {
+    margin-bottom: 24px;
 }
 
-/* Pages */
+#goal-input {
+    width: 100%;
+    padding: 12px 13px;
+    margin-bottom: 9px;
+    border: 1px solid #e4e4e7;
+    border-radius: 10px;
+    background: white;
+    color: #18181b;
+    font-size: 12px;
+    outline: none;
+}
+
+#goal-input:focus {
+    border-color: #18181b;
+}
+
+#generate-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #18181b;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#generate-button:hover {
+    background: #303035;
+}
+
+#generate-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+#loading {
+    margin-top: 8px;
+    color: #999;
+    font-size: 10px;
+    text-align: center;
+}
+
+.hidden {
+    display: none;
+}
+
+
+/* =========================
+   Learning Map
+   ========================= */
+
+#map-section {
+    margin-top: 24px;
+    margin-bottom: 24px;
+}
+
+#map {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.map-node {
+    min-width: 0;
+    padding: 13px;
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 11px;
+}
+
+.map-node:hover {
+    border-color: #18181b;
+}
+
+.map-node-title {
+    color: #27272a;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1.35;
+}
+
+.map-node-description {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-top: 6px;
+    color: #777;
+    font-size: 10px;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.map-node-difficulty {
+    margin-top: 8px;
+    color: #999;
+    font-size: 9px;
+}
+
+
+/* =========================
+   Journey
+   ========================= */
+
+.journey-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.journey-header .eyebrow {
+    margin-bottom: 0;
+}
+
+#page-count {
+    font-size: 11px;
+    color: #999;
+}
 
 #history {
     display: flex;
@@ -103,10 +220,8 @@ header {
 }
 
 .page {
-    padding: 13px 14px;
-
+    padding: 11px 13px;
     background: white;
-
     border: 1px solid #e4e4e7;
     border-radius: 11px;
 }
@@ -117,49 +232,43 @@ header {
 
 .page-title {
     overflow: hidden;
-
     color: #27272a;
-
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
     line-height: 1.4;
-
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 
 .page-url {
     overflow: hidden;
-
-    margin-top: 5px;
-
+    margin-top: 4px;
     color: #999;
-
-    font-size: 10px;
-
+    font-size: 9px;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 
-/* Footer */
+
+/* =========================
+   Footer
+   ========================= */
 
 footer {
     margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #e4e4e7;
 }
 
 #map-button {
     width: 100%;
-    padding: 13px;
-
+    padding: 12px;
     border: none;
     border-radius: 10px;
-
     background: #18181b;
     color: white;
-
     font-size: 12px;
     font-weight: bold;
-
     cursor: pointer;
 }
 
@@ -169,16 +278,11 @@ footer {
 
 #clear-button {
     display: block;
-
-    margin: 12px auto 0;
-
+    margin: 10px auto 0;
     border: none;
     background: none;
-
     color: #999;
-
     font-size: 10px;
-
     cursor: pointer;
 }
 
