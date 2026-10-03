@@ -6,6 +6,31 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+def clean_json_response(text):
+    text = text.strip()
+
+    # Remove Markdown code fences if Gemini adds them
+    if text.startswith("```"):
+        lines = text.splitlines()
+
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+
+        text = "\n".join(lines).strip()
+
+    # If Gemini adds extra text around the JSON,
+    # extract the JSON object.
+    start = text.find("{")
+    end = text.rfind("}")
+
+    if start != -1 and end != -1:
+        text = text[start:end + 1]
+
+    return text
+
 
 def generate_learning_map(topic: str):
     prompt = f"""
@@ -42,10 +67,16 @@ Return ONLY valid JSON in this exact format:
 }}
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.5-flash",
-        contents=prompt
-    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=prompt
+        )
+    except Exception:
+        response = client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=prompt
+        )
 
     return response.text
 
@@ -92,4 +123,4 @@ Return ONLY valid JSON in this exact format:
         contents=prompt
     )
 
-    return response.text
+    return clean_json_response(response.text)

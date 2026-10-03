@@ -289,3 +289,8 @@ footer {
 #clear-button:hover {
     color: #555;
 }
+
+.map-node.selected {
+    border-color: #18181b;
+    box-shadow: 0 0 0 1px #18181b;
+}

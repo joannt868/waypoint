@@ -1,4 +1,14 @@
 // =========================
+// Learning state
+// =========================
+
+let learningGoal = "";
+let learningNodes = [];
+let learningEdges = [];
+let visitedNodes = [];
+let currentNode = "";
+
+// =========================
 // Browsing history
 // =========================
 
@@ -92,6 +102,12 @@ document.getElementById("generate-button").addEventListener("click", async () =>
 
         console.log("Learning map:", data);
 
+        learningGoal = goal;
+        learningNodes = data.nodes;
+        learningEdges = data.edges;
+        visitedNodes = [];
+        currentNode = "";
+
         // Show the generated concepts
         map.innerHTML = "";
 
@@ -114,9 +130,60 @@ document.getElementById("generate-button").addEventListener("click", async () =>
                 </div>
             `;
 
+            // Make the concept clickable
+            nodeElement.addEventListener("click", async () => {
+
+                console.log("Selected concept:", node.id);
+
+                // Highlight the selected concept
+                document.querySelectorAll(".map-node").forEach((element) => {
+                    element.classList.remove("selected");
+                });
+
+                nodeElement.classList.add("selected");
+
+                // Remember the current concept
+                currentNode = node.id;
+
+                // Add it to visited concepts if we haven't visited it yet
+                if (!visitedNodes.includes(node.id)) {
+                    visitedNodes.push(node.id);
+                }
+
+                try {
+
+                    const response = await fetch("http://127.0.0.1:8000/next-waypoint", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            goal: learningGoal,
+                            current_node: currentNode,
+                            visited_nodes: visitedNodes,
+                            nodes: learningNodes,
+                            edges: learningEdges
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Backend returned ${response.status}`);
+                    }
+
+                    const nextWaypoint = await response.json();
+
+                    console.log("Next waypoint:", nextWaypoint);
+
+                } catch (error) {
+
+                    console.error("Error finding next waypoint:", error);
+
+                }
+
+            });
+
             map.appendChild(nodeElement);
         });
-
         mapSection.classList.remove("hidden");
 
     } catch (error) {
@@ -158,3 +225,5 @@ document.getElementById("clear-button").addEventListener("click", () => {
     });
 
 });
+
+
