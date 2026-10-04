@@ -45,6 +45,7 @@ Generate a learning map with:
 - 5 to 8 concepts
 - Each concept should have an id, title, description, and difficulty from 1 to 5
 - Create edges showing which concepts should be learned before others
+- Create a recommended_order containing the concept ids in the order they should generally be learned
 
 Return ONLY valid JSON in this exact format:
 
@@ -63,6 +64,10 @@ Return ONLY valid JSON in this exact format:
       "source": "first-node-id",
       "target": "next-node-id"
     }}
+  ],
+  "recommended_order": [
+    "first-node-id",
+    "second-node-id"
   ]
 }}
 """
@@ -81,8 +86,7 @@ Return ONLY valid JSON in this exact format:
     return response.text
 
 
-
-def generate_next_waypoint(goal, current_node, visited_nodes, nodes, edges):
+def generate_next_waypoint(goal, current_node, visited_nodes, pages, nodes, edges):
     prompt = f"""
 You are the navigation engine for Waypoint, an application that helps
 people learn a topic by navigating through a sequence of concepts.
@@ -95,6 +99,9 @@ Current concept:
 
 Concepts already visited:
 {visited_nodes}
+
+Pages the learner has visited:
+{pages}
 
 Available learning nodes:
 {nodes}
@@ -122,5 +129,43 @@ Return ONLY valid JSON in this exact format:
         model="gemini-3.5-flash",
         contents=prompt
     )
+
+    return clean_json_response(response.text)
+
+
+def generate_help_islands(topic, title, description, note):
+    prompt = f"""
+A learner is stuck on one concept in a learning map.
+Turn their note into the smaller lessons they are missing.
+These are basics or details, not another copy of the same concept.
+
+Goal: {topic}
+Concept: {title}
+About that concept: {description}
+What they said: {note}
+
+Return 1 to 3 lessons. Use only what their note needs.
+Return ONLY valid JSON:
+
+{{
+  "nodes": [
+    {{
+      "title": "Short lesson title",
+      "description": "One short sentence"
+    }}
+  ]
+}}
+"""
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=prompt
+        )
+    except Exception:
+        response = client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=prompt
+        )
 
     return clean_json_response(response.text)

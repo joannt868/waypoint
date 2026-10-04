@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Waypoint Map</title>
+    <link rel="stylesheet" href="map.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="brand-mark">W</div>
+
+            <div>
+                <div class="brand-name">Waypoint</div>
+                <div class="brand-subtitle">Your path through the web</div>
+            </div>
+        </div>
+
+        <div class="session-status">
+            <span class="status-dot"></span>
+            Research session
+        </div>
+    </header>
+
+    <main>
+
+        <section class="map-header">
+            <div>
+                <div class="eyebrow">YOUR INFORMATION MAP</div>
+                <h1 id="map-title">Loading...</h1>
+            </div>
+        </section>
+
+        <section class="map-layout">
+
+            <div class="map-area">
+                <div id="voyage" class="voyage"></div>
+            </div>
+
+            <aside class="waypoint-panel">
+
+                <div class="panel-label">YOUR JOURNEY</div>
+
+                <div id="progress-list"></div>
+
+                <div class="progress-meta">
+                    <div id="progress-count">0 / 0 concepts</div>
+                    <div id="progress-percent">0%</div>
+                </div>
+
+                <div class="progress-track">
+                    <div id="progress-fill"></div>
+                </div>
+
+                <div class="path-section">
+                    <div class="panel-label">WHERE YOU ARE</div>
+
+                <h2 id="current-title">The Basics</h2>
+
+                <p id="current-description">
+                    Start here to build your understanding.
+                </p>
+
+                <p id="current-source"></p>
+
+                <button id="another-button" type="button">
+                    This didn't help
+                </button>
+
+                <div id="help-panel" class="hidden">
+                    <p id="help-question">What would help more?</p>
+                    <div id="help-choices">
+                        <button id="help-another" type="button">Another explanation</button>
+                        <button id="help-lost" type="button">I'm lost</button>
+                    </div>
+                    <div id="lost-box" class="hidden">
+                        <textarea id="lost-note" rows="3" placeholder="What are you confused about?"></textarea>
+                        <button id="lost-submit" type="button">Add the missing pieces</button>
+                    </div>
+                    <p id="help-status"></p>
+                </div>
+                </div>
+
+                <div class="path-section">
+                    <div class="panel-label">WHAT YOU'VE OPENED</div>
+
+                    <div id="path">
+                        The Basics
+                    </div>
+                </div>
+
+                <div class="next-section">
+                    <div id="next-label" class="panel-label">SUGGESTED NEXT</div>
+
+                    <div id="next-title">Fundamentals</div>
+
+                    <button id="explore-button">
+                        Open next lesson
+                    </button>
+                </div>
+
+                <div class="path-section">
+                    <div class="panel-label">YOUR MAPS</div>
+                    <div id="saved-maps"></div>
+                </div>
+
+            </aside>
+
+        </section>
+
+    </main>
+
+    <script src="lessons.js"></script>
+    <script src="map.js"></script>
+
+</body>
+</html>

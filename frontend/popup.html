@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>Waypoint</title>
     <link rel="stylesheet" href="popup.css">
 </head>
@@ -46,6 +47,47 @@
     </section>
 
 
+    <!-- Learning Map -->
+
+    <section id="map-section" class="hidden">
+
+        <div class="eyebrow">YOUR ROUTE</div>
+
+        <div id="map"></div>
+
+    </section>
+
+    <button id="map-button">
+        Explore your map
+    </button>
+
+
+    <!-- Progress -->
+
+    <section class="progress-section">
+
+        <div class="eyebrow">YOUR JOURNEY</div>
+
+        <div id="progress-list"></div>
+
+        <div class="progress-meta">
+            <div id="progress-count">0 / 0 concepts</div>
+            <div id="progress-percent">0%</div>
+        </div>
+
+        <div class="progress-track">
+            <div id="progress-fill"></div>
+        </div>
+
+    </section>
+
+
+    <section class="maps-section">
+        <div class="eyebrow">YOUR MAPS</div>
+        <div id="saved-maps"></div>
+    </section>
+
+
     <!-- Journey -->
 
     <div class="journey-header">
@@ -58,31 +100,12 @@
         Loading...
     </main>
 
-
-    <!-- Learning Map -->
-
-    <section id="map-section" class="hidden">
-
-        <div class="eyebrow">LEARNING MAP</div>
-
-        <div id="map"></div>
-
-    </section>
+    <button id="clear-button">
+        Clear journey
+    </button>
 
 
-    <footer>
-
-        <button id="map-button">
-            Explore your map
-        </button>
-
-        <button id="clear-button">
-            Clear journey
-        </button>
-
-    </footer>
-
-
+    <script src="lessons.js"></script>
     <script src="popup.js"></script>
 
 </body>
