@@ -50,6 +50,8 @@ chrome.storage.local.get({
 
     record.nodes = mapData.nodes;
     let visitedNodes = record.visitedNodes || [];
+    let understoodNodes = record.understoodNodes || [];
+    let helpNodes = record.helpNodes || [];
     const nextWaypoint = record.id === library.activeMapId ? data.nextWaypoint : null;
 
     document.getElementById("map-title").textContent =
@@ -80,29 +82,35 @@ chrome.storage.local.get({
     }
 
     const learningOrder = orderedNodes();
+    function themePattern(words) {
+        return new RegExp(`\\b(?:${words.join("|")})\\b`, "i");
+    }
+
     const themes = [
-        { pattern: /stock|market|invest|finance|money|bank|trading|economy/, icons: ["📈", "💰", "🏦"] },
-        { pattern: /plane|airplane|flight|fly|airport|aviation|aircraft/, icons: ["✈️", "☁️", "🛫"] },
-        { pattern: /neural|machine learning|artificial|algorithm/, icons: ["🧠", "🔗", "💻"] },
-        { pattern: /immune|antibod|virus|cell|disease|health/, icons: ["🛡️", "🔬", "💊"] },
-        { pattern: /revolution|french|france|paris|history|empire|king/, icons: ["⚜️", "📜", "🏛️"] },
-        { pattern: /space|planet|star|orbit|moon|galaxy|nasa/, icons: ["🚀", "🌙", "✨"] },
-        { pattern: /music|song|piano|guitar|melody/, icons: ["🎵", "🎹", "🎶"] },
-        { pattern: /ocean|sea|marine|whale|coral/, icons: ["🐠", "🐚", "⚓"] }
+        { id: "tea", pattern: themePattern(["matcha", "tea", "teas", "latte", "chai", "coffee", "espresso"]), icons: ["🍵", "🍃", "☁️"] },
+        { id: "bake", pattern: themePattern(["bake", "baking", "baker", "bakery", "cake", "cakes", "bread", "pastry", "pastries", "cookie", "cookies", "dessert", "desserts", "cupcake", "recipe", "recipes", "kitchen"]), icons: ["🍞", "🥐", "🎂"] },
+        { id: "finance", pattern: themePattern(["stock", "stocks", "market", "invest", "investing", "finance", "money", "bank", "banking", "trading", "economy"]), icons: ["📈", "💰", "🏦"] },
+        { id: "flight", pattern: themePattern(["plane", "airplane", "flight", "flights", "fly", "flying", "airport", "aviation", "aircraft"]), icons: ["✈️", "☁️", "🛫"] },
+        { id: "tech", pattern: themePattern(["neural", "machine learning", "artificial intelligence", "algorithm", "algorithms", "computer", "computers", "code", "coding", "software"]), icons: ["🧠", "🔗", "💻"] },
+        { id: "health", pattern: themePattern(["immune", "antibody", "antibodies", "virus", "cell", "cells", "disease", "health", "medicine"]), icons: ["🛡️", "🔬", "💊"] },
+        { id: "history", pattern: themePattern(["revolution", "french", "france", "paris", "history", "empire", "king", "kings", "war"]), icons: ["⚜️", "📜", "🏛️"] },
+        { id: "space", pattern: themePattern(["space", "planet", "planets", "star", "stars", "orbit", "moon", "galaxy", "nasa", "solar"]), icons: ["🚀", "🌙", "✨"] },
+        { id: "music", pattern: themePattern(["music", "song", "songs", "piano", "guitar", "melody"]), icons: ["🎵", "🎹", "🎶"] },
+        { id: "ocean", pattern: themePattern(["ocean", "sea", "marine", "whale", "whales", "coral"]), icons: ["🐠", "🐚", "⚓"] }
     ];
 
     function destinationTheme(goal) {
         const text = String(goal || "").toLowerCase();
         const match = themes.find((theme) => theme.pattern.test(text));
-        return match || { icons: ["🏝️", "✨", "🗺️"] };
+        return match || { id: "tropical", icons: ["🏝️", "✨", "🗺️"] };
     }
 
-    function mainVisitedCount() {
-        return learningOrder.filter((node) => visitedNodes.includes(node.id)).length;
+    function mainUnderstoodCount() {
+        return learningOrder.filter((node) => understoodNodes.includes(node.id)).length;
     }
 
     function isComplete() {
-        return learningOrder.length > 0 && mainVisitedCount() === learningOrder.length;
+        return learningOrder.length > 0 && mainUnderstoodCount() === learningOrder.length;
     }
 
     function findConcept(id) {
@@ -134,13 +142,25 @@ chrome.storage.local.get({
     }
 
     function anchorNode(current) {
+        if (!current) {
+            return null;
+        }
+
         if (learningOrder.some((node) => node.id === current.id)) {
             return current;
         }
 
         return learningOrder.find((node) =>
             (node.details || []).some((detail) => detail.id === current.id)
-        ) || learningOrder[0];
+        ) || learningOrder.find((node) => node.id === current.parentId) || null;
+    }
+
+    function bigIslandOpened(node) {
+        if (visitedNodes.includes(node.id)) {
+            return true;
+        }
+
+        return (node.details || []).some((detail) => visitedNodes.includes(detail.id));
     }
 
     function suggestedNext(current) {
@@ -157,7 +177,7 @@ chrome.storage.local.get({
         }
 
         const startIndex = Math.max(
-            learningOrder.findIndex((node) => node.id === anchor.id),
+            learningOrder.findIndex((node) => node.id === anchor?.id),
             0
         );
 
@@ -198,7 +218,7 @@ chrome.storage.local.get({
                 : "You haven't opened any concepts yet";
 
         const last = learningOrder[learningOrder.length - 1];
-        const onLast = Boolean(last) && anchorNode(current).id === last.id;
+        const onLast = Boolean(last) && anchorNode(current)?.id === last.id;
 
         if (onLast || !next) {
             document.getElementById("next-label").textContent = "JOURNEY";
@@ -216,7 +236,7 @@ chrome.storage.local.get({
 
     function renderProgress(current) {
         const total = learningOrder.length;
-        const completed = mainVisitedCount();
+        const completed = mainUnderstoodCount();
         const percent = total === 0 ? 0 : Math.min(100, Math.round((completed / total) * 100));
         const finished = isComplete();
 
@@ -226,7 +246,7 @@ chrome.storage.local.get({
         document.getElementById("progress-fill").style.width = `${percent}%`;
 
         document.getElementById("progress-list").innerHTML = learningOrder.map((node) => {
-            const visited = visitedNodes.includes(node.id);
+            const understood = understoodNodes.includes(node.id);
             const isCurrent = !finished && node.id === current.id;
             let state = "upcoming";
             let mark = "○";
@@ -234,7 +254,7 @@ chrome.storage.local.get({
             if (isCurrent) {
                 state = "current";
                 mark = "🚤";
-            } else if (visited) {
+            } else if (understood) {
                 state = "done";
                 mark = "✓";
             }
@@ -254,11 +274,14 @@ chrome.storage.local.get({
         const current = currentNode();
         const complete = isComplete();
         const theme = destinationTheme(mapData.topic || "");
+        document.querySelector(".map-area").className = `map-area theme-${theme.id}`;
 
         voyage.innerHTML = "";
 
         learningOrder.forEach((node, index) => {
             const visited = visitedNodes.includes(node.id);
+            const opened = bigIslandOpened(node);
+            const understood = understoodNodes.includes(node.id);
             const isCurrent = !complete && node.id === current.id;
             let state = "upcoming";
             let note = "";
@@ -266,16 +289,16 @@ chrome.storage.local.get({
             if (isCurrent) {
                 state = "current";
                 note = visitedNodes.length ? "You are here" : "Start here";
-            } else if (visited) {
+            } else if (understood) {
                 state = "completed";
-                note = "Visited";
+                note = "Got it";
             }
 
             const shape = index % 5;
             const stop = document.createElement("div");
             stop.className = `sea-stop ${index % 2 === 0 ? "left" : "right"} shore-${shape}`;
             stop.innerHTML = `
-                <div class="island-card shape-${shape} ${state} ${visited ? "learned" : ""}" data-id="${escapeHtml(node.id)}">
+                <div class="island-card shape-${shape} ${state} ${visited ? "visited" : ""} ${understood ? "learned" : ""}" data-id="${escapeHtml(node.id)}">
                     <div class="island-mark">
                         <span>🏝️</span>
                     </div>
@@ -284,6 +307,7 @@ chrome.storage.local.get({
                         ${note ? `<div class="island-note">${note}</div>` : ""}
                         <div class="island-desc">${escapeHtml(node.description || "")}</div>
                         <div class="island-source">${escapeHtml(resourceLabel(node))}</div>
+                        ${opened && !understood ? `<button class="understand-button" type="button">I understand</button><p class="island-move-note hidden"></p>` : ""}
                     </div>
                     ${isCurrent ? `<span class="boat">🚤</span>` : ""}
                 </div>
@@ -291,6 +315,10 @@ chrome.storage.local.get({
 
             stop.querySelector(".island-card").addEventListener("click", () => {
                 openConcept(node);
+            });
+            stop.querySelector(".understand-button")?.addEventListener("click", (event) => {
+                event.stopPropagation();
+                markUnderstood(node);
             });
 
             voyage.appendChild(stop);
@@ -307,6 +335,7 @@ chrome.storage.local.get({
 
             details.forEach((detail, detailIndex) => {
                 const detailVisited = visitedNodes.includes(detail.id);
+                const detailUnderstood = understoodNodes.includes(detail.id);
                 const detailCurrent = !complete && detail.id === current.id;
                 let detailState = "upcoming";
                 let detailNote = "";
@@ -314,9 +343,9 @@ chrome.storage.local.get({
                 if (detailCurrent) {
                     detailState = "current";
                     detailNote = "You are here";
-                } else if (detailVisited) {
+                } else if (detailUnderstood) {
                     detailState = "completed";
-                    detailNote = "Visited";
+                    detailNote = "Got it";
                 }
 
                 const spot = fan[detailIndex];
@@ -324,7 +353,7 @@ chrome.storage.local.get({
                 const reach = Math.cos(radians) * spot.distance;
                 const rise = Math.sin(radians) * spot.distance;
                 const card = document.createElement("div");
-                card.className = `island-card islet ${detailState} ${detailVisited ? "learned" : ""}`;
+                card.className = `island-card islet ${detailState} ${detailVisited ? "visited" : ""} ${detailUnderstood ? "learned" : ""}`;
                 card.dataset.id = detail.id;
                 card.style.top = `calc(50% + ${rise}px)`;
 
@@ -340,10 +369,15 @@ chrome.storage.local.get({
                     <div class="island-mark"><span>🏝️</span></div>
                     <div class="island-title">${escapeHtml(detail.title)}</div>
                     ${detailNote ? `<div class="island-note">${detailNote}</div>` : ""}
+                    ${detailVisited && !detailUnderstood ? `<button class="understand-button" type="button">I understand</button>` : ""}
                     ${detailCurrent ? `<span class="boat">🚤</span>` : ""}
                 `;
                 card.addEventListener("click", () => {
                     openConcept(detail);
+                });
+                card.querySelector(".understand-button")?.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    markUnderstood(detail);
                 });
                 stop.appendChild(card);
             });
@@ -418,40 +452,47 @@ chrome.storage.local.get({
     window.addEventListener("resize", drawRoutes);
 
     function centerOf(element, voyage) {
-        let x = element.offsetWidth / 2;
-        let y = element.offsetHeight / 2;
-        let node = element;
+        const box = boxInVoyage(element, voyage);
 
-        while (node && node !== voyage) {
-            x += node.offsetLeft;
-            y += node.offsetTop;
-            node = node.offsetParent;
-        }
-
-        return { x, y };
+        return {
+            x: box.left + box.width / 2,
+            y: box.top + box.height / 2
+        };
     }
 
     function branchLayout(count) {
         const plans = {
-            1: [{ angle: 0, distance: 156 }],
+            1: [{ angle: 0, distance: 168 }],
             2: [
-                { angle: -36, distance: 196 },
-                { angle: 36, distance: 196 }
+                { angle: -42, distance: 220 },
+                { angle: 42, distance: 220 }
             ],
             3: [
-                { angle: -44, distance: 214 },
-                { angle: 0, distance: 164 },
-                { angle: 44, distance: 214 }
+                { angle: -50, distance: 240 },
+                { angle: 0, distance: 196 },
+                { angle: 50, distance: 240 }
             ],
             4: [
-                { angle: -52, distance: 236 },
-                { angle: -18, distance: 170 },
-                { angle: 18, distance: 170 },
-                { angle: 52, distance: 236 }
+                { angle: -58, distance: 258 },
+                { angle: -28, distance: 210 },
+                { angle: 28, distance: 210 },
+                { angle: 58, distance: 258 }
             ]
         };
 
         return plans[Math.min(Math.max(count, 1), 4)];
+    }
+
+    function boxInVoyage(element, voyage) {
+        const voyageBox = voyage.getBoundingClientRect();
+        const box = element.getBoundingClientRect();
+
+        return {
+            left: box.left - voyageBox.left + voyage.scrollLeft,
+            top: box.top - voyageBox.top + voyage.scrollTop,
+            width: box.width,
+            height: box.height
+        };
     }
 
     function edgePoint(element, voyage, side) {
@@ -464,17 +505,24 @@ chrome.storage.local.get({
     }
 
     function waterPoint(element, voyage) {
-        const center = centerOf(element, voyage);
+        const box = boxInVoyage(element, voyage);
+        const islet = element.classList.contains("islet");
+        const onRight = !islet && element.closest(".sea-stop")?.classList.contains("right");
 
         return {
-            x: center.x,
-            y: center.y + element.offsetHeight / 2 + 6
+            x: islet
+                ? box.left + box.width / 2
+                : onRight
+                    ? box.left + box.width * 0.88
+                    : box.left + box.width * 0.1,
+            y: box.top + box.height + (islet ? 2 : 6)
         };
     }
 
     function curve(previous, spot) {
-        const dip = Math.max(28, Math.min(72, Math.abs(spot.y - previous.y) * 0.22));
-        const sway = previous.x < spot.x ? -24 : 24;
+        const span = Math.hypot(spot.x - previous.x, spot.y - previous.y);
+        const dip = Math.max(12, Math.min(72, span * 0.16));
+        const sway = (previous.x < spot.x ? -1 : 1) * Math.min(24, span * 0.06);
         const controlX = ((previous.x + spot.x) / 2) + sway;
         const controlY = ((previous.y + spot.y) / 2) + dip;
 
@@ -539,7 +587,7 @@ chrome.storage.local.get({
             function frame(now) {
                 const t = Math.min(1, (now - started) / duration);
                 const cruise = t * t * (3 - 2 * t);
-                const distance = length * (0.1 + cruise * 0.8);
+                const distance = length * cruise;
                 const point = probe.getPointAtLength(distance);
                 const rock = Math.sin(t * Math.PI * 2.5) * 5;
 
@@ -570,12 +618,61 @@ chrome.storage.local.get({
     async function persistMap() {
         record.nodes = mapData.nodes;
         record.visitedNodes = visitedNodes;
+        record.understoodNodes = understoodNodes;
+        record.helpNodes = helpNodes;
         record.topic = mapData.topic || record.topic;
         const savedMaps = await writeMapRecord(record, false);
         renderSavedMaps(document.getElementById("saved-maps"), savedMaps);
     }
 
+    function moveBlockReason(target) {
+        const current = currentNode();
+        const fromBig = anchorNode(current);
+        const toBig = anchorNode(target);
+
+        if (!toBig || (fromBig && fromBig.id === toBig.id)) {
+            return "";
+        }
+
+        const toIndex = learningOrder.findIndex((node) => node.id === toBig.id);
+
+        for (let index = 0; index < toIndex; index += 1) {
+            const island = learningOrder[index];
+
+            if (bigIslandOpened(island) && !understoodNodes.includes(island.id)) {
+                return "You must indicate that before moving on.";
+            }
+        }
+
+        return "";
+    }
+
+    function showMoveNote(message) {
+        const note = document.getElementById("move-note");
+
+        if (!message) {
+            note.textContent = "";
+            note.classList.add("hidden");
+        } else {
+            note.textContent = message;
+            note.classList.remove("hidden");
+        }
+
+        document.querySelectorAll(".island-move-note").forEach((item) => {
+            item.textContent = message || "";
+            item.classList.toggle("hidden", !message);
+        });
+    }
+
     async function openConcept(node) {
+        const reason = moveBlockReason(node);
+
+        if (reason) {
+            showMoveNote(reason);
+            return;
+        }
+
+        showMoveNote("");
         const from = document.querySelector(".island-card.current");
         const to = document.querySelector(`[data-id="${CSS.escape(node.id)}"]`);
 
@@ -586,6 +683,17 @@ chrome.storage.local.get({
         visitedNodes = visitedNodes.filter((id) => id !== node.id);
         visitedNodes.push(node.id);
 
+        await persistMap();
+        renderVoyage();
+        updatePanel();
+    }
+
+    async function markUnderstood(node) {
+        if (!understoodNodes.includes(node.id)) {
+            understoodNodes.push(node.id);
+        }
+
+        showMoveNote("");
         await persistMap();
         renderVoyage();
         updatePanel();
@@ -647,11 +755,19 @@ chrome.storage.local.get({
         openConcept(next || current);
     });
 
-    document.getElementById("another-button").addEventListener("click", () => {
+    document.getElementById("another-button").addEventListener("click", async () => {
         const panel = document.getElementById("help-panel");
+        const anchor = anchorNode(currentNode());
+
         panel.classList.remove("hidden");
         document.getElementById("lost-box").classList.add("hidden");
         document.getElementById("help-status").textContent = "";
+
+        if (anchor && !helpNodes.includes(anchor.id)) {
+            helpNodes.push(anchor.id);
+            showMoveNote("");
+            await persistMap();
+        }
     });
 
     document.getElementById("help-another").addEventListener("click", async () => {

@@ -151,6 +151,8 @@ header {
 }
 
 #map.ocean {
+    --sea: #1d4e63;
+
     max-height: 340px;
     margin-top: 10px;
     padding: 14px 12px 16px;
@@ -159,7 +161,77 @@ header {
     border-radius: 16px;
     background:
         radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.55), transparent 28%),
-        linear-gradient(180deg, #d7eef6 0%, #b7dceb 100%);
+        linear-gradient(180deg, #d5eef8 0%, #b9deef 55%, #a9d4e8 100%);
+}
+
+#map.ocean.theme-tea {
+    --sea: #4f6b45;
+    background:
+        radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.75), transparent 28%),
+        linear-gradient(180deg, #e7f3df 0%, #c5d7b0 55%, #a9c4b2 100%);
+}
+
+#map.ocean.theme-bake {
+    --sea: #8a5a3c;
+    background:
+        radial-gradient(circle at 78% 18%, rgba(255, 244, 220, 0.8), transparent 28%),
+        linear-gradient(180deg, #f8efe4 0%, #f0d2b4 52%, #e4b7a0 100%);
+}
+
+#map.ocean.theme-finance {
+    --sea: #3f6b58;
+    background:
+        radial-gradient(circle at 18% 16%, rgba(255, 248, 220, 0.7), transparent 28%),
+        linear-gradient(180deg, #e7f4ea 0%, #b7d7c4 55%, #8fbfae 100%);
+}
+
+#map.ocean.theme-flight {
+    --sea: #3d6f90;
+    background:
+        radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.75), transparent 30%),
+        linear-gradient(180deg, #e7f3fb 0%, #c5dff0 50%, #9ec8e4 100%);
+}
+
+#map.ocean.theme-tech {
+    --sea: #3d6f78;
+    background:
+        radial-gradient(circle at 20% 80%, rgba(180, 245, 230, 0.45), transparent 28%),
+        linear-gradient(180deg, #d7eef4 0%, #9fd0d4 55%, #6eafb8 100%);
+}
+
+#map.ocean.theme-health {
+    --sea: #3f7568;
+    background:
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.7), transparent 26%),
+        linear-gradient(180deg, #e5f6f2 0%, #b7ddd4 55%, #8ec4b8 100%);
+}
+
+#map.ocean.theme-history {
+    --sea: #7a6244;
+    background:
+        radial-gradient(circle at 16% 18%, rgba(255, 236, 200, 0.55), transparent 28%),
+        linear-gradient(180deg, #f3e6cf 0%, #d7c4a2 50%, #b7a488 100%);
+}
+
+#map.ocean.theme-space {
+    --sea: #5c6794;
+    background:
+        radial-gradient(circle at 75% 18%, rgba(190, 210, 255, 0.35), transparent 24%),
+        linear-gradient(180deg, #d5dcf2 0%, #aeb8dc 52%, #8e98c4 100%);
+}
+
+#map.ocean.theme-music {
+    --sea: #7a5d86;
+    background:
+        radial-gradient(circle at 20% 24%, rgba(255, 214, 230, 0.55), transparent 26%),
+        linear-gradient(180deg, #f8e4ef 0%, #e3c4de 48%, #c9b6e0 100%);
+}
+
+#map.ocean.theme-ocean {
+    --sea: #1d6e8a;
+    background:
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.35), transparent 24%),
+        linear-gradient(180deg, #c5e8f4 0%, #7ec4dc 55%, #4aa3c4 100%);
 }
 
 .waypoint-stop {
@@ -178,7 +250,7 @@ header {
 }
 
 .sea-route.sailed {
-    border-left-color: #1d4e63;
+    border-left-color: var(--sea);
 }
 
 .island {
@@ -196,8 +268,13 @@ header {
     background: rgba(255, 255, 255, 0.45);
 }
 
-.island.completed {
-    background: rgba(255, 255, 255, 0.58);
+.island.completed,
+.island.understood {
+    background: #e7f6df;
+}
+
+.island.current.understood {
+    background: #f4fbf0;
 }
 
 .island.current {
@@ -257,11 +334,41 @@ header {
     overflow-wrap: anywhere;
 }
 
-.island .another-lesson {
+.island .another-lesson,
+.island .understand-button {
     width: auto;
     margin-top: 6px;
     padding: 4px 8px;
-    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #d4d4d8;
+    border-radius: 8px;
+    background: white;
+    color: #18181b;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    font-weight: bold;
+    outline: none;
+    cursor: pointer;
+}
+
+.island .another-lesson:hover,
+.island .understand-button:hover {
+    border-color: #18181b;
+    background: #f4f4f5;
+}
+
+#move-note {
+    margin: 8px 0 0;
+    color: #9a3412;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.island-move-note {
+    margin: 6px 0 0;
+    color: #9a3412;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1.35;
 }
 
 .destination {

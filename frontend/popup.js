@@ -7,6 +7,8 @@ let learningNodes = [];
 let learningEdges = [];
 let recommendedOrder = [];
 let visitedNodes = [];
+let understoodNodes = [];
+let helpNodes = [];
 let currentNode = "";
 let activeMapId = "";
 
@@ -39,7 +41,7 @@ function renderJourneyProgress() {
     const fill = document.getElementById("progress-fill");
     const nodes = orderedLearningNodes();
     const total = nodes.length;
-    const completed = nodes.filter((node) => visitedNodes.includes(node.id)).length;
+    const completed = nodes.filter((node) => understoodNodes.includes(node.id)).length;
     const percent = total === 0 ? 0 : Math.min(100, Math.round((completed / total) * 100));
     const currentId = currentNode || "";
 
@@ -58,7 +60,7 @@ function renderJourneyProgress() {
     }
 
     list.innerHTML = nodes.map((node) => {
-        const visited = visitedNodes.includes(node.id);
+        const understood = understoodNodes.includes(node.id);
         const isCurrent = node.id === currentId;
         let state = "upcoming";
         let mark = "○";
@@ -68,7 +70,7 @@ function renderJourneyProgress() {
         if (!finished && isCurrent) {
             state = "current";
             mark = "🚤";
-        } else if (visited) {
+        } else if (understood) {
             state = "done";
             mark = "✓";
         }
@@ -91,28 +93,34 @@ function escapeHtml(value) {
         .replaceAll('"', "&quot;");
 }
 
+function themePattern(words) {
+    return new RegExp(`\\b(?:${words.join("|")})\\b`, "i");
+}
+
 const DESTINATION_THEMES = [
-    { pattern: /stock|market|invest|finance|money|bank|trading|economy/, icons: ["📈", "💰", "🏦"] },
-    { pattern: /plane|airplane|flight|fly|airport|aviation|aircraft/, icons: ["✈️", "☁️", "🛫"] },
-    { pattern: /neural|machine learning|artificial|algorithm/, icons: ["🧠", "🔗", "💻"] },
-    { pattern: /immune|antibod|virus|cell|disease|health/, icons: ["🛡️", "🔬", "💊"] },
-    { pattern: /revolution|french|france|paris|history|empire|king/, icons: ["⚜️", "📜", "🏛️"] },
-    { pattern: /space|planet|star|orbit|moon|galaxy|nasa/, icons: ["🚀", "🌙", "✨"] },
-    { pattern: /music|song|piano|guitar|melody/, icons: ["🎵", "🎹", "🎶"] },
-    { pattern: /ocean|sea|marine|whale|coral/, icons: ["🐠", "🐚", "⚓"] }
+    { id: "tea", pattern: themePattern(["matcha", "tea", "teas", "latte", "chai", "coffee", "espresso"]), icons: ["🍵", "🍃", "☁️"] },
+    { id: "bake", pattern: themePattern(["bake", "baking", "baker", "bakery", "cake", "cakes", "bread", "pastry", "pastries", "cookie", "cookies", "dessert", "desserts", "cupcake", "recipe", "recipes", "kitchen"]), icons: ["🍞", "🥐", "🎂"] },
+    { id: "finance", pattern: themePattern(["stock", "stocks", "market", "invest", "investing", "finance", "money", "bank", "banking", "trading", "economy"]), icons: ["📈", "💰", "🏦"] },
+    { id: "flight", pattern: themePattern(["plane", "airplane", "flight", "flights", "fly", "flying", "airport", "aviation", "aircraft"]), icons: ["✈️", "☁️", "🛫"] },
+    { id: "tech", pattern: themePattern(["neural", "machine learning", "artificial intelligence", "algorithm", "algorithms", "computer", "code"]), icons: ["🧠", "🔗", "💻"] },
+    { id: "health", pattern: themePattern(["immune", "antibody", "virus", "cell", "cells", "disease", "health", "medicine"]), icons: ["🛡️", "🔬", "💊"] },
+    { id: "history", pattern: themePattern(["revolution", "french", "france", "paris", "history", "empire", "king", "kings", "war"]), icons: ["⚜️", "📜", "🏛️"] },
+    { id: "space", pattern: themePattern(["space", "planet", "planets", "star", "stars", "orbit", "moon", "galaxy", "nasa", "solar"]), icons: ["🚀", "🌙", "✨"] },
+    { id: "music", pattern: themePattern(["music", "song", "songs", "piano", "guitar", "melody"]), icons: ["🎵", "🎹", "🎶"] },
+    { id: "ocean", pattern: themePattern(["ocean", "sea", "marine", "whale", "whales", "coral"]), icons: ["🐠", "🐚", "⚓"] }
 ];
 
 function getDestinationTheme(goal) {
     const text = String(goal || "").toLowerCase();
     const match = DESTINATION_THEMES.find((theme) => theme.pattern.test(text));
 
-    return match || { icons: ["🏝️", "✨", "🗺️"] };
+    return match || { id: "tropical", icons: ["🏝️", "✨", "🗺️"] };
 }
 
 function journeyIsComplete() {
     const nodes = orderedLearningNodes();
 
-    return nodes.length > 0 && nodes.every((node) => visitedNodes.includes(node.id));
+    return nodes.length > 0 && nodes.every((node) => understoodNodes.includes(node.id));
 }
 
 function lastMainVisited() {
@@ -151,6 +159,8 @@ async function savePopupMap(keepTime) {
             }
         });
         visitedNodes = [...new Set([...(existing.visitedNodes || []), ...visitedNodes])];
+        understoodNodes = [...new Set([...(existing.understoodNodes || []), ...understoodNodes])];
+        helpNodes = [...new Set([...(existing.helpNodes || []), ...helpNodes])];
     }
 
     const savedMaps = await writeMapRecord({
@@ -159,7 +169,9 @@ async function savePopupMap(keepTime) {
         nodes: learningNodes,
         edges: learningEdges,
         recommended_order: recommendedOrder,
-        visitedNodes: visitedNodes
+        visitedNodes: visitedNodes,
+        understoodNodes: understoodNodes,
+        helpNodes: helpNodes
     }, true, keepTime);
 
     renderSavedMaps(document.getElementById("saved-maps"), savedMaps);
@@ -167,14 +179,14 @@ async function savePopupMap(keepTime) {
 
 function getNodeState(node) {
     if (journeyIsComplete()) {
-        return visitedNodes.includes(node.id) ? "completed" : "upcoming";
+        return understoodNodes.includes(node.id) ? "completed" : "upcoming";
     }
 
     if (node.id === currentNode) {
         return "current";
     }
 
-    if (visitedNodes.includes(node.id)) {
+    if (understoodNodes.includes(node.id)) {
         return "completed";
     }
 
@@ -189,14 +201,14 @@ function renderIsland(node, sailed) {
     island.className = "waypoint-stop";
     island.innerHTML = `
         <div class="sea-route ${sailed ? "sailed" : ""}"></div>
-        <div class="island ${state}">
+        <div class="island ${state} ${understoodNodes.includes(node.id) ? "understood" : ""}">
             <div class="island-mark">
                 <span class="island-emoji">🏝️</span>
                 ${state === "current" ? `<span class="boat">🚤</span>` : ""}
             </div>
             <div class="island-copy">
                 <div class="island-title">${escapeHtml(node.title)}</div>
-                ${state === "completed" ? `<div class="island-note">Visited</div>` : ""}
+                ${understoodNodes.includes(node.id) && state !== "current" ? `<div class="island-note">Got it</div>` : ""}
                 ${state === "current" ? `<div class="island-note">You are here</div>` : ""}
                 <div class="island-desc">${escapeHtml(node.description || "")}</div>
                 <div class="island-source">${escapeHtml(source)}</div>
@@ -212,6 +224,14 @@ function renderIsland(node, sailed) {
 
     anotherButton.addEventListener("click", async (event) => {
         event.stopPropagation();
+
+        const here = currentNode || orderedLearningNodes()[0]?.id || "";
+
+        if (node.id === here && !helpNodes.includes(node.id)) {
+            helpNodes.push(node.id);
+            showMoveNote("");
+            await savePopupMap();
+        }
 
         anotherButton.disabled = true;
         anotherButton.textContent = "Looking...";
@@ -230,7 +250,52 @@ function renderIsland(node, sailed) {
 
     island.querySelector(".island-copy").appendChild(anotherButton);
 
+    if (visitedNodes.includes(node.id) && !understoodNodes.includes(node.id)) {
+        const understandButton = document.createElement("button");
+        understandButton.type = "button";
+        understandButton.className = "understand-button";
+        understandButton.textContent = "I understand";
+
+        understandButton.addEventListener("click", async (event) => {
+            event.stopPropagation();
+
+            if (!understoodNodes.includes(node.id)) {
+                understoodNodes.push(node.id);
+            }
+
+            showMoveNote("");
+            await savePopupMap();
+            renderLearningJourney();
+            renderJourneyProgress();
+        });
+
+        island.querySelector(".island-copy").appendChild(understandButton);
+
+        const here = currentNode || orderedLearningNodes()[0]?.id || "";
+
+        if (node.id === here) {
+            const moveNote = document.createElement("p");
+            moveNote.className = "island-move-note hidden";
+            island.querySelector(".island-copy").appendChild(moveNote);
+        }
+    }
+
     body.addEventListener("click", async () => {
+        const nodes = orderedLearningNodes();
+        const toIndex = nodes.findIndex((item) => item.id === node.id);
+        const blocked = nodes.slice(0, Math.max(toIndex, 0)).some((island) => {
+            const opened = visitedNodes.includes(island.id)
+                || (island.details || []).some((detail) => visitedNodes.includes(detail.id));
+
+            return opened && !understoodNodes.includes(island.id);
+        });
+
+        if (blocked) {
+            showMoveNote("You must indicate that before moving on.");
+            return;
+        }
+
+        showMoveNote("");
         await openLesson(node, learningGoal);
         currentNode = node.id;
 
@@ -245,6 +310,27 @@ function renderIsland(node, sailed) {
     });
 
     return island;
+}
+
+function showMoveNote(message) {
+    const note = document.getElementById("move-note");
+
+    if (!note) {
+        return;
+    }
+
+    if (!message) {
+        note.textContent = "";
+        note.classList.add("hidden");
+    } else {
+        note.textContent = message;
+        note.classList.remove("hidden");
+    }
+
+    document.querySelectorAll(".island-move-note").forEach((item) => {
+        item.textContent = message || "";
+        item.classList.toggle("hidden", !message);
+    });
 }
 
 function renderDestination() {
@@ -276,7 +362,7 @@ function renderLearningJourney() {
     const nodes = orderedLearningNodes();
 
     map.innerHTML = "";
-    map.className = "ocean";
+    map.className = `ocean theme-${getDestinationTheme(learningGoal).id}`;
 
     nodes.forEach((node, index) => {
         const previous = nodes[index - 1];
@@ -372,6 +458,8 @@ chrome.storage.local.get({
     learningEdges = record.edges || [];
     recommendedOrder = record.recommended_order || [];
     visitedNodes = record.visitedNodes || [];
+    understoodNodes = record.understoodNodes || [];
+    helpNodes = record.helpNodes || [];
     learningNodes = record.nodes || [];
 
     try {
@@ -443,6 +531,8 @@ document.getElementById("generate-button").addEventListener("click", async () =>
         learningEdges = data.edges;
         recommendedOrder = data.recommended_order || [];
         visitedNodes = [];
+        understoodNodes = [];
+        helpNodes = [];
         currentNode = "";
 
         const linked = await ensureResourceLinks(data, goal);
@@ -461,6 +551,8 @@ document.getElementById("generate-button").addEventListener("click", async () =>
             edges: linked.edges || [],
             recommended_order: linked.recommended_order || [],
             visitedNodes: [],
+            understoodNodes: [],
+            helpNodes: [],
             updatedAt: Date.now()
         });
 
@@ -470,6 +562,8 @@ document.getElementById("generate-button").addEventListener("click", async () =>
             mapData: linked,
             learningGoal: goal,
             visitedNodes: [],
+            understoodNodes: [],
+            helpNodes: [],
             nextWaypoint: null,
             pages: []
         });

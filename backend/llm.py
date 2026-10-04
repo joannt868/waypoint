@@ -1,4 +1,7 @@
+import json
 import os
+import urllib.request
+
 from dotenv import load_dotenv
 from google import genai
 
@@ -6,10 +9,13 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+GROK_URL = "https://api.x.ai/v1/chat/completions"
+GROK_MODELS = ("grok-4.7", "grok-4.3")
+
+
 def clean_json_response(text):
     text = text.strip()
 
-    # Remove Markdown code fences if Gemini adds them
     if text.startswith("```"):
         lines = text.splitlines()
 
@@ -21,8 +27,6 @@ def clean_json_response(text):
 
         text = "\n".join(lines).strip()
 
-    # If Gemini adds extra text around the JSON,
-    # extract the JSON object.
     start = text.find("{")
     end = text.rfind("}")
 
@@ -32,20 +36,65 @@ def clean_json_response(text):
     return text
 
 
+def grok_text(prompt):
+    key = os.getenv("XAI_API_KEY")
+
+    if not key:
+        raise RuntimeError("XAI_API_KEY is missing")
+
+    last_error = None
+
+    for model in GROK_MODELS:
+        body = json.dumps({
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "Return only valid JSON."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.4,
+        }).encode()
+        request = urllib.request.Request(
+            GROK_URL,
+            data=body,
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=90) as response:
+                payload = json.loads(response.read().decode())
+            return payload["choices"][0]["message"]["content"]
+        except Exception as error:
+            last_error = error
+
+    raise last_error
+
+
+def gemini_text(prompt, model):
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+    )
+    return response.text
+
+
 def generate_learning_map(topic: str):
     prompt = f"""
-You are helping build Waypoint, an application that helps people learn
-a topic by navigating through a sequence of concepts.
+You are planning a learning journey for Waypoint.
+Decide the concepts, how hard each one is, which concept comes before another, and the order to learn them.
+Do not write the lesson explanations. Another step writes those.
 
 The user's learning goal is:
 
 {topic}
 
-Generate a learning map with:
+Plan a learning map with:
 - 5 to 8 concepts
-- Each concept should have an id, title, description, and difficulty from 1 to 5
-- Create edges showing which concepts should be learned before others
-- Create a recommended_order containing the concept ids in the order they should generally be learned
+- Each concept needs an id, title, and difficulty from 1 to 5
+- Edges showing which concepts should be learned before others
+- recommended_order containing the concept ids in the order they should generally be learned
 
 Return ONLY valid JSON in this exact format:
 
@@ -55,7 +104,6 @@ Return ONLY valid JSON in this exact format:
     {{
       "id": "unique-id",
       "title": "Concept title",
-      "description": "Short description",
       "difficulty": 1
     }}
   ],
@@ -72,24 +120,69 @@ Return ONLY valid JSON in this exact format:
 }}
 """
 
-    try:
-        response = client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=prompt
-        )
-    except Exception:
-        response = client.models.generate_content(
-            model="gemini-3.5-flash-lite",
-            contents=prompt
-        )
+    data = json.loads(clean_json_response(grok_text(prompt)))
 
-    return response.text
+    if isinstance(data, dict) and isinstance(data.get("nodes"), list):
+        try:
+            write_concept_descriptions(topic, data["nodes"])
+        except Exception:
+            for node in data["nodes"]:
+                node["description"] = node.get("description") or node.get("title") or ""
+
+    return json.dumps(data)
+
+
+def write_concept_descriptions(topic, nodes):
+    concepts = [
+        {
+            "id": node.get("id"),
+            "title": node.get("title"),
+            "difficulty": node.get("difficulty"),
+        }
+        for node in nodes
+        if node.get("id") and node.get("title")
+    ]
+    prompt = f"""
+Write the beginner explanation shown on each stop of a learning journey.
+One short sentence each. Plain words. Do not add new concepts.
+
+Goal: {topic}
+Concepts:
+{json.dumps(concepts)}
+
+Return ONLY valid JSON:
+
+{{
+  "nodes": [
+    {{
+      "id": "same-id",
+      "description": "One short sentence"
+    }}
+  ]
+}}
+"""
+
+    try:
+        text = gemini_text(prompt, "gemini-3.5-flash")
+    except Exception:
+        text = gemini_text(prompt, "gemini-3.5-flash-lite")
+
+    written = json.loads(clean_json_response(text))
+    by_id = {}
+
+    for item in written.get("nodes") or []:
+        if isinstance(item, dict) and item.get("id"):
+            by_id[item["id"]] = str(item.get("description") or "").strip()
+
+    for node in nodes:
+        description = by_id.get(node.get("id"))
+        node["description"] = description or node.get("title") or ""
 
 
 def generate_next_waypoint(goal, current_node, visited_nodes, pages, nodes, edges):
     prompt = f"""
-You are the navigation engine for Waypoint, an application that helps
-people learn a topic by navigating through a sequence of concepts.
+You are choosing the next stop on a learning journey that was already planned.
+Look at the goal, where the learner is, which concepts they already opened, and which pages they actually read.
 
 Learning goal:
 {goal}
@@ -125,12 +218,7 @@ Return ONLY valid JSON in this exact format:
 }}
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.5-flash",
-        contents=prompt
-    )
-
-    return clean_json_response(response.text)
+    return clean_json_response(grok_text(prompt))
 
 
 def generate_help_islands(topic, title, description, note):
@@ -158,14 +246,8 @@ Return ONLY valid JSON:
 """
 
     try:
-        response = client.models.generate_content(
-            model="gemini-3.5-flash-lite",
-            contents=prompt
-        )
+        text = gemini_text(prompt, "gemini-3.5-flash-lite")
     except Exception:
-        response = client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=prompt
-        )
+        text = gemini_text(prompt, "gemini-3.5-flash")
 
-    return clean_json_response(response.text)
+    return clean_json_response(text)

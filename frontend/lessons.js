@@ -450,10 +450,10 @@ function orderedMapNodes(mapData) {
     return ordered;
 }
 
-function progressFor(mapData, visitedNodes) {
+function progressFor(mapData, understoodNodes) {
     const nodes = orderedMapNodes(mapData);
-    const visited = visitedNodes || [];
-    const done = nodes.filter((node) => visited.includes(node.id)).length;
+    const understood = understoodNodes || [];
+    const done = nodes.filter((node) => understood.includes(node.id)).length;
     const total = nodes.length;
     const percent = total === 0 ? 0 : Math.min(100, Math.round((done / total) * 100));
 
@@ -471,8 +471,8 @@ function topicKey(topic) {
 }
 
 function betterMap(current, candidate) {
-    const currentDone = progressFor(current, current.visitedNodes).done;
-    const candidateDone = progressFor(candidate, candidate.visitedNodes).done;
+    const currentDone = progressFor(current, current.understoodNodes).done;
+    const candidateDone = progressFor(candidate, candidate.understoodNodes).done;
 
     if (candidateDone !== currentDone) {
         return candidateDone > currentDone ? candidate : current;
@@ -582,6 +582,8 @@ async function writeMapRecord(record, makeActive, keepTime) {
         edges: record.edges || [],
         recommended_order: record.recommended_order || [],
         visitedNodes: record.visitedNodes || [],
+        understoodNodes: record.understoodNodes || [],
+        helpNodes: record.helpNodes || [],
         updatedAt: Date.now()
     };
     let index = savedMaps.findIndex((item) => item.id === next.id);
@@ -596,6 +598,14 @@ async function writeMapRecord(record, makeActive, keepTime) {
         next.visitedNodes = [...new Set([
             ...(previous.visitedNodes || []),
             ...(next.visitedNodes || [])
+        ])];
+        next.understoodNodes = [...new Set([
+            ...(previous.understoodNodes || []),
+            ...(next.understoodNodes || [])
+        ])];
+        next.helpNodes = [...new Set([
+            ...(previous.helpNodes || []),
+            ...(next.helpNodes || [])
         ])];
 
         if (keepTime) {
@@ -664,7 +674,7 @@ function renderSavedMaps(container, maps) {
     const ordered = sortMaps(maps);
 
     container.innerHTML = ordered.map((map) => {
-        const progress = progressFor(map, map.visitedNodes);
+        const progress = progressFor(map, map.understoodNodes);
 
         return `
             <button class="saved-map" type="button" data-map-id="${escapeText(map.id)}">
